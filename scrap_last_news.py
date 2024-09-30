@@ -4,9 +4,9 @@ from bs4 import BeautifulSoup
 
 async def scrap():
 
-  ###########################################
+  #--------------------------
   # pyppeter basic launch
-  ###########################################
+  #--------------------------
 
   browser = await launch(headless=True)
   page = await browser.newPage()
@@ -20,9 +20,9 @@ async def scrap():
   await browser.close()
   # close pyppeter 
 
-  ###########################################
+  #------------------------------------------
   # begin html parsing with BeautifulSoup
-  ###########################################
+  #------------------------------------------
 
   soup = BeautifulSoup(html, 'html.parser')
   title = soup.find_all('a',href=True)
@@ -35,7 +35,6 @@ async def scrap():
   for h3_tag in h3_tags:
   # Find all anchor tags <a> within the current <h3>
     anchor_tags = h3_tag.find_all('a')
-  # List to store the URLs
 
   # Iterate through each anchor tag and extract the URL
     for anchor_tag in anchor_tags:
@@ -44,9 +43,6 @@ async def scrap():
         urls.append(url)  # Add the URL to the list
 
   return(urls)
-#  for url in urls:
-#    print(url)
-
 
 # Creates a new event loop & runs your main() coroutine until it completes and then closes the loop 
 ulrs = asyncio.run(scrap())
