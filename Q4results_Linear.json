@@ -1,0 +1,22 @@
+[
+    {
+        "inputs": "Q4 results: +20%",
+        "outputs": "the score is +10"
+    },
+    {
+        "inputs": "Q4 results: +10%",
+        "outputs": "the score is +5"
+    },
+    {
+        "inputs": "Q4 results: +0%",
+        "outputs": "the score is +0"
+    },
+    {
+        "inputs": "Q4 results: -10%",
+        "outputs": "the score is -5"
+    },
+    {
+        "inputs": "Q4 results: -20%",
+        "outputs": "the score is -10"
+    }
+]
