@@ -5,20 +5,24 @@ from ibapi.common import *
 import csv
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import datetime  # Import the datetime module
+import pytz
 
 class StockPrice(EWrapper, EClient):
 
-    def __init__(self,stockname):
+    def __init__(self,stockname,newstime):
         EClient.__init__(self, self)
         self.historical_data = {}
         self.stock_name = stockname
+        self.news_time  = newstime 
 
     def nextValidId(self, orderId: int):
         # Request historical data for AAPL
         self.reqHistoricalData(
             reqId=1,
             contract=self.create_contract(self.stock_name, "STK", "USD", "SMART"),
-            endDateTime="20241001 23:00:00 US/Eastern",  # if "" <=> Current time
+            endDateTime=self.news_time,
+            #endDateTime="",
             durationStr="1 D",  # Last day
             barSizeSetting="1 min",  # 1-minute bars
             whatToShow="TRADES",
@@ -66,28 +70,35 @@ class StockPrice(EWrapper, EClient):
                 writer.writerow(data_point)
 
     def plot_data(self, reqId):
-        # Plot the historical data with adjusted x-axis ticks
+        # Plot the historical data with adjusted x-axis ticks and normalized prices
         data = self.historical_data[reqId]["data"]
-        dates = [mdates.datestr2num(d["date"]) for d in data]  # Convert dates to numbers
+        dates = [mdates.datestr2num(d["date"]) for d in data]  # Convert dates to numbers since GMT
         close_prices = [d["close"] for d in data]
 
-        first_close = close_prices[0]
-        normalized_prices = [(price - first_close) / first_close * 100 for price in close_prices]
+        # Find the index of the close price closest to 1 PM
+        target_time = datetime.datetime(2024, 10, 1, 13, 00, tzinfo=pytz.timezone('GMT')).timestamp() #transform 
+        closest_index = min(range(len(dates)), key=lambda i: abs(dates[i]*86400 - target_time))
+        normalization_price = close_prices[closest_index]
+
+        # Normalize close prices to percentage change from the normalization price
+        normalized_prices = [(price - normalization_price) / normalization_price * 100 for price in close_prices]
 
         plt.plot(dates, normalized_prices)
-        plt.xlabel("Date")
+        plt.xlabel("Time")
         plt.ylabel("Close Price Change (%)")  # Update y-axis label
-        plt.title(self.stock_name + " Historical Data")
+        date_str = mdates.num2date(dates[0]).strftime('%Y-%m-%d')
+        plt.title(self.stock_name + " Historical Data - " + date_str)  # Add date to title
+        plt.axvline(x=dates[closest_index], color='red', linestyle='--', label='Target Time (1 PM)')
 
         # Set x-axis locator and formatter for hourly ticks
         plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))  # Format as HH:MM
 
         plt.xticks(rotation=45)
         plt.show()
 
 def main():
-    app = StockPrice("UNFI")
+    app = StockPrice("UNFI","20241001 15:00:00 US/Eastern")
     app.connect('127.0.0.1', 7496, 123)
     app.run()
     print("Historical data:", app.historical_data)
