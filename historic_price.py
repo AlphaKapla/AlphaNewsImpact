@@ -47,10 +47,10 @@ class StockPrice(EWrapper, EClient):
         self.boolplot: bool = boolshow  # not show graph, 1 show graph
 
     def getmaxover5(self) -> float:
-        return self.minover5
+        return self.maxover5
     
     def getminover5(self) -> float:
-        return self.maxover5
+        return self.minover5
 
     def add_10h_to_datetime_str(self, datetime_str):
       """
