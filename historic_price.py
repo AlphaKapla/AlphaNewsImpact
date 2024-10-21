@@ -20,7 +20,6 @@ import pytz
 # 5. Upgrade Subscription: If necessary, upgrade your subscription to real-time for that instrument. 
 # This might involve additional fees.
 
-
 class TimeChecker(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
@@ -146,37 +145,102 @@ class StockPrice(EWrapper, EClient):
             for data_point in self.historical_data[reqId]["data"]:
                 writer.writerow(data_point)
 
-    def get_target_time(self):
+    def get_news_time(self):
         try:
             # Split the string to extract the date, time, and time zone information
-            datetime_part, tz_part = self.news_time.rsplit(' ', 1)
-        
+            date_part, time_part, tz_part = self.news_time.rsplit(' ', 2)  # Split into 3 parts
+            tz_part = tz_part.replace("Daylight ", "")  # Remove "Daylight"
+
+            # Re-combine the parts
+            datetime_str = f"{date_part} {time_part} {tz_part}"
+
             # Create a datetime object with the specified time zone
-            datetime_object = datetime.datetime.strptime(datetime_part, '%Y%m%d %H:%M:%S')
-        
-            # Get the timestamp in seconds since epoch
+            datetime_object = datetime.datetime.strptime(f"{date_part} {time_part}",'%Y%m%d %H:%M:%S')
+
+            # Make the datetime object aware of the time zone
+            tz_object = pytz.timezone('US/Eastern')  # Use the correct time zone name
+            datetime_object = tz_object.localize(datetime_object)
+
+            # Get the timestamp in seconds since epoch UTC
             target_time = datetime_object.timestamp()
 
             return target_time
-    
+
         except ValueError:
             return "Invalid datetime format"
 
     def timestamp_to_datetime_string(self, timestamp):
         datetime_object = datetime.datetime.fromtimestamp(timestamp)
-        datetime_string = datetime_object.strftime('%Y-%m-%d %H:%M:%S')
+        datetime_string = datetime_object.strftime('%Y-%m-%d %H:%M:%S')  # convert in local time
         return datetime_string
+
+
+    def get_local_timezone(self):
+        """
+        Automatically detects the local time zone.
+
+        Returns:
+            A pytz timezone object representing the local time zone.
+        """
+        try:
+            # Get the local time zone abbreviation
+            local_timezone_abbr = datetime.datetime.now(datetime.timezone.utc).astimezone().tzname()
+
+            # Map abbreviations to full time zone names (this is not exhaustive)
+            timezone_map = {
+                "BST": "Europe/London",
+                "GMT": "Europe/London",
+                "CET": "Europe/Paris",
+                "CEST": "Europe/Paris",
+                "EET": "Europe/Athens",
+                "EEST": "Europe/Athens",
+                "MSK": "Europe/Moscow",
+                "MSD": "Europe/Moscow",
+                "IST": "Asia/Kolkata",
+                "JST": "Asia/Tokyo",
+                "KST": "Asia/Seoul",
+                "AEST": "Australia/Sydney",
+                "AEDT": "Australia/Sydney",
+                "EST": "America/New_York",
+                "EDT": "America/New_York",
+                "CST": "America/Chicago",
+                "CDT": "America/Chicago",
+                "MST": "America/Denver",
+                "MDT": "America/Denver",
+                "PST": "America/Los_Angeles",
+                "PDT": "America/Los_Angeles"
+            }
+
+            # Get the full time zone name from the map
+            local_timezone_name = timezone_map.get(local_timezone_abbr)
+            if local_timezone_name:
+                local_timezone = pytz.timezone(local_timezone_name)
+                return local_timezone
+            else:
+                print(f"Unknown time zone abbreviation: {local_timezone_abbr}")
+                return None
+
+        except Exception as e:
+            print(f"Could not determine the local time zone: {e}")
+            return None
+
 
     def plot_data(self, reqId):
         # Plot the historical data with adjusted x-axis ticks and normalized prices
         data = self.historical_data[reqId]["data"]
-        dates = [mdates.datestr2num(d["date"])-5*3600.0/86400.0 for d in data] # -5h to be US/Eastern Time, Because my IB account is in UK time
+        # ! mdates.datestr2num does not take into account local time, consider dates and time in UTC
+        # adding timezone to add offset hour compare to UTC
+        offset_hours = datetime.datetime.now(self.get_local_timezone()).utcoffset().total_seconds()/3600.0
+        dates = [mdates.datestr2num(d["date"])-offset_hours/24.0 for d in data]
         close_prices = [d["close"] for d in data]
-
         # Find the index of the close price to target
-        target_time = self.get_target_time()
+        target_time = self.get_news_time()
         print("target_time :", self.timestamp_to_datetime_string(target_time))
         closest_index = min(range(len(dates)), key=lambda i: abs(dates[i]*86400 - target_time))
+        print("data[0]['date']  :", data[0]['date'])
+        print("tmin             :", self.timestamp_to_datetime_string(dates[0]*86400))
+        print("data[end]['date']:",data[len(dates)-1]['date'])
+        print("tmax             :", self.timestamp_to_datetime_string(dates[len(dates)-1]*86400))
 
         # Calculate the index for 5 hours after the target time
         index_5h_after_target = min(closest_index + 5 * 60, len(dates) - 1)  # 5 hours * 60 minutes/hour
@@ -194,16 +258,22 @@ class StockPrice(EWrapper, EClient):
         print(f"Max price over 5 hours after target time: {self.maxover5}")
         print(f"Min price over 5 hours after target time: {self.minover5}")
 
-        plt.plot(dates, normalized_prices)
+        # Create a DateFormatter with the local time zone
+        formatter = mdates.DateFormatter('%Y-%m-%d %H:%M:%S', tz=pytz.timezone('Europe/Paris'))
+
+        # Set the formatter for the x-axis
+        plt.gca().xaxis.set_major_formatter(formatter)
+        plt.plot([mdates.datestr2num(d["date"]) for d in data], normalized_prices)
         plt.xlabel("Time")
         plt.ylabel("Close Price Change (%)")  # Update y-axis label
         date_str = mdates.num2date(dates[0]).strftime('%Y-%m-%d')
         plt.title(self.stock_name + " Historical Data - " + date_str)  # Add date to title
-        plt.axvline(x=dates[closest_index], color='red', linestyle='--', label='Target Time')
+        plt.axvline(x=dates[closest_index]+offset_hours/24, color='red', linestyle='--', label='Target Time')
+        plt.axhline(y=0, color='red', linestyle='--', label='Target Time')
 
         # Set x-axis locator and formatter for hourly ticks
         plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))  # Format as HH:MM
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
         plt.xticks(rotation=45)
         if self.boolplot:
@@ -241,13 +311,31 @@ def transform_datetime_to_IBformat(datetime_str):
 
 
 def main():
-    mytime = "October 15, 2024 08:30 AM Eastern Daylight Time"
-    mystock = "ACI"
-    # mytime="October 07, 2024 09:00 AM Eastern Daylight Time"
-    # mytime="October 09, 2024 09:48 PM Eastern Daylight Time"
-    mytime = "September 25, 2024 03:01 PM Eastern Daylight Time"
-    mystock = "ACI"
-#    breakpoint()
+    
+    ## Example 1: 
+    mystock = "GWRE"
+    mytime = "September 05, 2024 04:15 PM Eastern Daylight Time"
+    # Max price over 5 hours after target time: 5.364548494983285
+    # Min price over 5 hours after target time: -1.3377926421404682
+
+    ## Example 2:
+    # mystock = "ACN"
+    # mytime = "September 26, 2024 06:39 AM Eastern Daylight Time"
+    # Max price over 5 hours after target time: 6.470622727805791
+    # Min price over 5 hours after target time: 0.0
+
+    ## Example 3: 
+    # mystock = "CHCO"
+    # mytime = "September 25, 2024 07:01 PM Eastern Daylight Time"
+    # Max price over 5 hours after target time:Max price over 5 hours after target time: 0.39407178959992606
+    # Min price over 5 hours after target time: -1.1393814786258873
+
+    ## Example 4:
+    # mystock = "ACI"
+    # mytime = "October 15, 2024 08:30 AM Eastern Daylight Time"
+    # Max price over 5 hours after target time: 0.161812297734634
+    # Min price over 5 hours after target time: -1.8338727076591146
+
     app = StockPrice(mystock, transform_datetime_to_IBformat(mytime), True)
     app.connect('127.0.0.1', 7496, 123)
     app.run()
