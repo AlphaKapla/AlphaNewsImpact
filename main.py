@@ -23,16 +23,16 @@ stock, time, text = scrape_text_with_requests(url3)
 print("my stock is :", stock)
 print("my time is :", time)
 
-""" historicpriceApp = StockPrice(stock, transform_datetime_to_IBformat(time), False)
+historicpriceApp = StockPrice(stock, transform_datetime_to_IBformat(time), False)
 historicpriceApp.connect('127.0.0.1', 7496, 123)
 historicpriceApp.run()
 historicpriceApp.historical_data
-historicpriceApp.plot_data(1) """
+historicpriceApp.plot_data(1)
 
-""" if text:
+if text:
     save_text_to_json(text, historicpriceApp.getmaxover5())  # Save the data to JSON
 else:
-    print(f"text empty") """
+    print(f"text empty")
 
 
 if __name__ == "__main__":
