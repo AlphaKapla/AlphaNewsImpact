@@ -23,7 +23,7 @@ stock, time, text = scrape_text_with_requests(url3)
 print("my stock is :", stock)
 print("my time is :", time)
 
-historicpriceApp = StockPrice(stock, transform_datetime_to_IBformat(time), False)
+historicpriceApp = HistoricPrice(stock, transform_datetime_to_IBformat(time), False)
 historicpriceApp.connect('127.0.0.1', 7496, 123)
 historicpriceApp.run()
 historicpriceApp.historical_data
