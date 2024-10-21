@@ -36,7 +36,7 @@ class TimeChecker(EWrapper, EClient):
         print(f"Error: reqId:{reqId} errorCode:{errorCode} errorString:{errorString}")
 
 
-class StockPrice(EWrapper, EClient):
+class HistoricPrice(EWrapper, EClient):
     def __init__(self, stockname, newstime, boolshow):
         EClient.__init__(self, self)
         self.historical_data = {}
@@ -336,7 +336,7 @@ def main():
     # Max price over 5 hours after target time: 0.161812297734634
     # Min price over 5 hours after target time: -1.8338727076591146
 
-    app = StockPrice(mystock, transform_datetime_to_IBformat(mytime), True)
+    app = HistoricPrice(mystock, transform_datetime_to_IBformat(mytime), True)
     app.connect('127.0.0.1', 7496, 123)
     app.run()
     print("Historical data:", app.historical_data)
