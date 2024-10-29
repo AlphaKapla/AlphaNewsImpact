@@ -7,13 +7,6 @@ import requests
 import asyncio
 from pyppeteer.launcher import launch
 
-def scrape_webpage(url):
-    response = requests.get(url)
-    response.raise_for_status()  # Check for HTTP errors
-
-    soup = BeautifulSoup(response.content, 'html.parser')
-    return extracted_data
-
 def read_json_file(file_path):
   try:
     with open(file_path, 'r') as file:
@@ -44,7 +37,8 @@ def generate():
     print(response.text, end="")
 
 #json_data = read_json_file("IdealCase/Q4results_Linear.json")
-json_data = read_json_file("sources_simple.json")
+#json_data = read_json_file("sources_simple.json")
+json_data = read_json_file("scraped_data.json")
 df = pd.DataFrame(json_data)
 df = df.astype(str)
 
@@ -80,8 +74,4 @@ safety_settings = [
     ),
 ]
 
-
-#url = "https://www.businesswire.com/portal/site/home/template.PAGE/search/?searchType=news&searchTerm=Fiscal%20%222024%20Results%22%20-Announces%20-Announce&searchPage=1"
-#data = scrape_webpage(url)
-#print(data)
 generate()
