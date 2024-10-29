@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import json
 
 def extract_stock_symbol(text):
     """
@@ -65,6 +66,49 @@ def scrape_text_with_requests(url):
         print(f"An error occurred while fetching {url}: {e}")
         return None, None, None
 
+def save_text_to_file(text, filename="scraped_text.txt"):
+    """
+    Saves the given text to a file.
+
+    Args:
+        text: The text to save.
+        filename: The name of the file to save to.
+    """
+    try:
+        with open(filename, "w") as file:
+            file.write(text)
+        print(f"Text saved to {filename}")
+    except Exception as e:
+        print(f"An error occurred while saving the text: {e}")
+
+def save_text_to_json(text, maxover5, filename="scraped_data.json", append=False):
+    """
+    Saves the text and maxover5 to a JSON file.
+
+    Args:
+        text: The extracted text.
+        maxover5: The calculated maxover5 value.
+        filename: The name of the JSON file to save to.
+        append: If True, appends the data to the existing file. 
+                If False (default), overwrites the file.
+    """
+    try:
+        if append:
+            try:
+                with open(filename, "r") as file:
+                    data = json.load(file)  # Load existing data
+            except FileNotFoundError:
+                data = []  # If the file doesn't exist, start with an empty list
+            data.append({"inputs": text, "outputs": "the score is " + str(maxover5)})  # Add new data
+        else:
+            data = [{"inputs": text, "outputs": "the score is " + str(maxover5)}]  # Create new data
+
+        with open(filename, "w") as file:
+            json.dump(data, file, indent=4)  # Save the data to the JSON file
+        print(f"Data saved to {filename}")
+
+    except Exception as e:
+        print(f"An error occurred while saving the data: {e}")
 
 def main():
     # Examples
@@ -78,6 +122,11 @@ def main():
     print(stock)
     print(time)
     print(text)
+
+    if text:
+        save_text_to_file(text)
+    else:
+        print(f"Failed to scrape {url3}")
 
 if __name__ == '__main__':
     main()
