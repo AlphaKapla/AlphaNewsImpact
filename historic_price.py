@@ -158,7 +158,8 @@ class HistoricPrice(EWrapper, EClient):
             datetime_object = datetime.datetime.strptime(f"{date_part} {time_part}",'%Y%m%d %H:%M:%S')
 
             # Make the datetime object aware of the time zone
-            tz_object = pytz.timezone('US/Eastern')  # Use the correct time zone name
+            # tz_object = pytz.timezone('US/Eastern')  # Use the correct time zone name
+            tz_object = pytz.timezone('GMT')  # Use the correct time zone name
             datetime_object = tz_object.localize(datetime_object)
 
             # Get the timestamp in seconds since epoch UTC
@@ -231,16 +232,17 @@ class HistoricPrice(EWrapper, EClient):
         # ! mdates.datestr2num does not take into account local time, consider dates and time in UTC
         # adding timezone to add offset hour compare to UTC
         offset_hours = datetime.datetime.now(self.get_local_timezone()).utcoffset().total_seconds()/3600.0
-        dates = [mdates.datestr2num(d["date"])-offset_hours/24.0 for d in data]
+        dates = [mdates.datestr2num(d["date"])-offset_hours/24.0 - 5/24.0 for d in data] 
+        print('offset hours =',offset_hours)
         close_prices = [d["close"] for d in data]
         # Find the index of the close price to target
         target_time = self.get_news_time()
         print("target_time :", self.timestamp_to_datetime_string(target_time))
         closest_index = min(range(len(dates)), key=lambda i: abs(dates[i]*86400 - target_time))
-        print("data[0]['date']  :", data[0]['date'])
-        print("tmin             :", self.timestamp_to_datetime_string(dates[0]*86400))
-        print("data[end]['date']:",data[len(dates)-1]['date'])
-        print("tmax             :", self.timestamp_to_datetime_string(dates[len(dates)-1]*86400))
+        print("data[0]['date'] extracted from IB at my time zone :", data[0]['date'])
+        print("tmin after conversion to NY time :", self.timestamp_to_datetime_string(dates[0]*86400))
+        print("data[end]['date'] extracted from IB at my time zone :",data[len(dates)-1]['date'])
+        print("tmax after conversion to NY time :", self.timestamp_to_datetime_string(dates[len(dates)-1]*86400))
 
         # Calculate the index for 5 hours after the target time
         index_5h_after_target = min(closest_index + 5 * 60, len(dates) - 1)  # 5 hours * 60 minutes/hour
@@ -259,11 +261,11 @@ class HistoricPrice(EWrapper, EClient):
         print(f"Min price over 5 hours after target time: {self.minover5}")
 
         # Create a DateFormatter with the local time zone
-        formatter = mdates.DateFormatter('%Y-%m-%d %H:%M:%S', tz=pytz.timezone('Europe/Paris'))
+        # formatter = mdates.DateFormatter('%Y-%m-%d %H:%M:%S', tz=pytz.timezone('Europe/Paris'))
 
         # Set the formatter for the x-axis
-        plt.gca().xaxis.set_major_formatter(formatter)
-        plt.plot([mdates.datestr2num(d["date"]) for d in data], normalized_prices)
+        # plt.gca().xaxis.set_major_formatter(formatter)
+        plt.plot(dates, normalized_prices)
         plt.xlabel("Time")
         plt.ylabel("Close Price Change (%)")  # Update y-axis label
         date_str = mdates.num2date(dates[0]).strftime('%Y-%m-%d')
@@ -335,6 +337,9 @@ def main():
     # mytime = "October 15, 2024 08:30 AM Eastern Daylight Time"
     # Max price over 5 hours after target time: 0.161812297734634
     # Min price over 5 hours after target time: -1.8338727076591146
+
+    #mystock = "CRI"
+    #mytime = "October 25, 2024 06:11 AM Eastern Daylight Time"
 
     app = HistoricPrice(mystock, transform_datetime_to_IBformat(mytime), True)
     app.connect('127.0.0.1', 7496, 123)
