@@ -150,6 +150,7 @@ class HistoricPrice(EWrapper, EClient):
             # Split the string to extract the date, time, and time zone information
             date_part, time_part, tz_part = self.news_time.rsplit(' ', 2)  # Split into 3 parts
             tz_part = tz_part.replace("Daylight ", "")  # Remove "Daylight"
+            tz_part = tz_part.replace("Standard ", "")  # Remove "Standard"
 
             # Re-combine the parts
             datetime_str = f"{date_part} {time_part} {tz_part}"
@@ -273,6 +274,22 @@ class HistoricPrice(EWrapper, EClient):
         plt.axvline(x=dates[closest_index]+offset_hours/24, color='red', linestyle='--', label='Target Time')
         plt.axhline(y=0, color='red', linestyle='--', label='Target Time')
 
+        # Add gray shadow for out-of-market hours
+        # Get the date from the first date in the dates list
+        date_obj = mdates.num2date(dates[0])
+        date_str = date_obj.strftime('%Y-%m-%d')
+
+        # Calculate the start and end times for market hours
+        market_open_time = datetime.datetime(date_obj.year, date_obj.month, date_obj.day, 9, 30)
+        market_close_time = datetime.datetime(date_obj.year, date_obj.month, date_obj.day, 16, 0)
+
+        # Convert market times to numerical values for plotting
+        market_open_num = mdates.date2num(market_open_time)
+        market_close_num = mdates.date2num(market_close_time)
+        plt.axvspan(dates[0], market_open_num, color='gray', alpha=0.2)  # Before market open
+        plt.axvspan(market_close_num, dates[-1], color='gray', alpha=0.2)  # After market close
+
+
         # Set x-axis locator and formatter for hourly ticks
         plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
@@ -295,10 +312,12 @@ def transform_datetime_to_IBformat(datetime_str):
     """
     try:
         if "Eastern Daylight Time" not in datetime_str:
-            raise ValueError(f"Substring 'Eastern Daylight Time' not found in '{datetime_str}', cannot manage other time zone conversion for now")
+            if "Eastern Standard Time" not in datetime_str:
+                raise ValueError(f"Substring 'Eastern Daylight or Standard Time' not found in '{datetime_str}', cannot manage other time zone conversion for now")
 
         # Re-combine the parts
         extracted_str = datetime_str.replace(" Eastern Daylight Time","")
+        extracted_str = extracted_str.replace(" Eastern Standard Time","")
 
         # Parse the modified string into a datetime object
         datetime_object = datetime.datetime.strptime(extracted_str, "%B %d, %Y %I:%M %p")
@@ -337,6 +356,10 @@ def main():
     # mytime = "October 15, 2024 08:30 AM Eastern Daylight Time"
     # Max price over 5 hours after target time: 0.161812297734634
     # Min price over 5 hours after target time: -1.8338727076591146
+
+    ## Example 6:
+    # mystock = "KIND"
+    # mytime  = "November 06, 2024 04:05 PM Eastern Standard Time"
 
     #mystock = "CRI"
     #mytime = "October 25, 2024 06:11 AM Eastern Daylight Time"
