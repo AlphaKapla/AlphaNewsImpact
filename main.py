@@ -25,6 +25,9 @@ urls = [
         'https://www.businesswire.com/news/home/20240926554709/en/Large-Deals-Workforce-Management-Leadership-Drive-UKG-Third-Quarter-Fiscal-2024-Results',
         'https://www.businesswire.com/news/home/20240926721611/en/Accenture-Reports-Fourth-Quarter-and-Full-Year-Fiscal-2024-Results',
         'https://www.businesswire.com/news/home/20241015517655/en/Albertsons-Companies-Inc.-Reports-Second-Quarter-Fiscal-2024-Results'
+        'https://www.businesswire.com/news/home/20241106589586/en/Nextdoor-Reports-Third-Quarter-2024-Results'
+        'https://www.businesswire.com/news/home/20241106827708/en/HubSpot-Reports-Q3-2024-Results'
+        'https://www.businesswire.com/news/home/20241106893388/en/Centuri-Reports-Third-Quarter-2024-Results-Reiterates-2024-Guidance' #need to be checked before
         ]
 for url in urls:
     print("scrapping url :",url)
