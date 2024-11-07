@@ -232,7 +232,8 @@ class HistoricPrice(EWrapper, EClient):
         data = self.historical_data[reqId]["data"]
         # ! mdates.datestr2num does not take into account local time, consider dates and time in UTC
         # adding timezone to add offset hour compare to UTC
-        offset_hours = datetime.datetime.now(self.get_local_timezone()).utcoffset().total_seconds()/3600.0
+        # offset_hours = datetime.datetime.now(self.get_local_timezone()).utcoffset().total_seconds()/3600.0
+        offset_hours = 0
         dates = [mdates.datestr2num(d["date"])-offset_hours/24.0 - 5/24.0 for d in data] 
         print('offset hours =',offset_hours)
         close_prices = [d["close"] for d in data]
@@ -334,8 +335,8 @@ def transform_datetime_to_IBformat(datetime_str):
 def main():
     
     ## Example 1: 
-    mystock = "GWRE"
-    mytime = "September 05, 2024 04:15 PM Eastern Daylight Time"
+    # mystock = "GWRE"
+    # mytime = "September 05, 2024 04:15 PM Eastern Daylight Time"
     # Max price over 5 hours after target time: 5.364548494983285
     # Min price over 5 hours after target time: -1.3377926421404682
 
@@ -357,9 +358,17 @@ def main():
     # Max price over 5 hours after target time: 0.161812297734634
     # Min price over 5 hours after target time: -1.8338727076591146
 
-    ## Example 6:
-    # mystock = "KIND"
-    # mytime  = "November 06, 2024 04:05 PM Eastern Standard Time"
+    ## Example 5:
+    mystock = "KIND"
+    mytime  = "November 06, 2024 04:05 PM Eastern Standard Time"
+
+    # Example 6:
+    # mystock = "HUBS"
+    # mytime = "November 06, 2024 04:05 PM Eastern Standard Time"
+
+    # Example 7:  -> not working properly -> need to be checked
+    # mystock = "CTRI"
+    # mytime = "November 06, 2024 08:00 AM Eastern Standard Time"
 
     #mystock = "CRI"
     #mytime = "October 25, 2024 06:11 AM Eastern Daylight Time"
