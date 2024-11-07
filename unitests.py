@@ -62,3 +62,13 @@ def test_historic_price4():
     assert abs(historicpriceApp.getmaxover5() - 0.161812297734634) < 0.0001
     assert abs(historicpriceApp.getminover5() + 1.8338727076591146) < 0.0001
 
+def test_historic_price5():
+    stock = "KIND"
+    time = "November 06, 2024 04:05 PM Eastern Standard Time"
+    historicpriceApp = HistoricPrice(stock, transform_datetime_to_IBformat(time), False)
+    historicpriceApp.connect('127.0.0.1', 7496, 123)
+    historicpriceApp.run()
+    historicpriceApp.historical_data
+    historicpriceApp.plot_data(1)
+    assert abs(historicpriceApp.getmaxover5() - 6.488549618320608) < 0.0001
+    assert abs(historicpriceApp.getminover5() + 0.0) < 0.0001
